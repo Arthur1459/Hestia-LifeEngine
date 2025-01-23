@@ -29,9 +29,9 @@ class Cell:
         if isInGrid(target) and (vr.grid.getAt(target).variant == BASE or vr.grid.getAt(target) == self.father or (vr.grid.getAt(target) in self.children)) and all([child.canMoveToward(dir) for child in self.children]): return True
         else: return False
     def MoveToward(self, dir):
+        vr.grid.clearAt(self.pos)
         for child in self.children:
             child.MoveToward(dir)
-        vr.grid.clearAt(self.pos)
         self.pos = keepInGrid(t.Vadd(self.pos, dir))
         vr.grid.putAt(self, self.pos)
     def update(self):

@@ -23,7 +23,7 @@ def init():
 
     vr.grid = Grid()
 
-    for i in range(1):
+    for i in range(200):
         test_cell = Body((t.randint(1, cf.grid_size - 4), t.randint(1, cf.grid_size - 2)))
         vr.grid.putAt(test_cell, test_cell.pos)
 
