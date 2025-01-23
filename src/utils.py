@@ -57,3 +57,14 @@ class IdObj:
     def __init__(self, obj=None):
         self.Id = obj.id
         self.obj = obj
+
+def keepInGrid(pos):
+    line, row = pos
+    if line >= vr.grid.lines(): line = vr.grid.lines() - 1
+    elif line < 0: line = 0
+    if row >= vr.grid.rows(): row = vr.grid.rows() - 1
+    elif row < 0: row = 0
+    return line, row
+
+def isInGrid(pos):
+    return 0 <= pos[0] < vr.grid.lines() and 0 <= pos[1] < vr.grid.rows()

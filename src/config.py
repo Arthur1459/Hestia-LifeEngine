@@ -7,6 +7,6 @@ window_default_size = (800, 820)
 fullscreen = False
 
 fps = 30
-update_rate = 0.25 # update per second
+update_rate = 4 # second per update
 cell_size = 80
 grid_size = 800 // cell_size

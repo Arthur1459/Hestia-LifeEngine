@@ -13,7 +13,7 @@ running = False
 inputs = {}
 dt, t, t_key = 1/cf.update_rate, 0, 0
 nb_updates = 0
-pause = True
+pause = False
 
 cursor = (0, 0)
 id = 0

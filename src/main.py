@@ -4,8 +4,8 @@ import utils as u
 import vars as vr
 import config as cf
 import time
-from Grid import Grid
-from Creature import Cell
+from Grid import Grid, GridPrint
+from Creature import Cell, Body
 
 def init():
 
@@ -22,6 +22,9 @@ def init():
     u.initInputs()
 
     vr.grid = Grid()
+
+    test_cell = Body((5, 4))
+    vr.grid.putAt(test_cell, test_cell.pos)
 
     return
 
@@ -44,6 +47,7 @@ def main():
                 print("Cursor : ", pg.mouse.get_pos())
 
         # Main Loop #
+        #GridPrint(vr.grid)
         always_do_pre()
         if vr.pause is False:
             update()
