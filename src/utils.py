@@ -18,15 +18,17 @@ def Text(msg, coord, size, color):  # blit to the screen a text
 def initInputs():
     resetInputs()
     vr.inputs["SPACE"] = False
+    vr.inputs["ESC"] = False
 
 def getInputs():
     keys = pg.key.get_pressed()
     if keys[pg.K_SPACE] : vr.inputs["SPACE"] = True
+    if keys[pg.K_ESCAPE]: vr.inputs["ESC"] = True
 
 def resetInputs():
     vr.inputs = {key: False for key in vr.inputs}
 
-def canKey(dt=0.3):
+def canKey(dt=0.2):
     if vr.t - vr.t_key > dt:
         vr.t_key = vr.t
         return True
@@ -50,3 +52,8 @@ def drawSeg(seg):
 def getNewId():
     vr.id += 1
     return vr.id
+
+class IdObj:
+    def __init__(self, obj=None):
+        self.Id = obj.id
+        self.obj = obj

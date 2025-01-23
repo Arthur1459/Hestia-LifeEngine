@@ -4,6 +4,8 @@ import utils as u
 import vars as vr
 import config as cf
 import time
+from Grid import Grid
+from Creature import Cell
 
 def init():
 
@@ -18,6 +20,8 @@ def init():
         vr.window_size = vr.window.get_size()
 
     u.initInputs()
+
+    vr.grid = Grid()
 
     return
 
@@ -40,28 +44,38 @@ def main():
                 print("Cursor : ", pg.mouse.get_pos())
 
         # Main Loop #
-        pre_update()
+        always_do_pre()
         if vr.pause is False:
             update()
-        post_update()
+        always_do_post()
+        pg.display.update()
         # --------- #
 
     return
 
 def update():
-    vr.nb_updates += 1
-    vr.cursor = pg.mouse.get_pos()
+    pre_update()
 
+    vr.grid.update()
+
+    post_update()
     return
 
 def pre_update():
+    vr.nb_updates += 1
+    vr.cursor = pg.mouse.get_pos()
     vr.window.fill('black')
 
 def post_update():
-    if vr.inputs['SPACE'] and u.canKey(): vr.pause = False if vr.pause else True
-    u.Text("generation : " + str(vr.nb_updates), (10, vr.win_height - 24), 14, 'orange')
-    pg.display.update()
     return
+
+def always_do_pre():
+    if vr.inputs['ESC']: vr.running = False
+    if vr.inputs['SPACE'] and u.canKey(): vr.pause = False if vr.pause else True
+
+def always_do_post():
+    pg.draw.rect(vr.window, 'black', [0, vr.win_height - 20, vr.win_width, 20])
+    u.Text("Generation " + str(vr.nb_updates), (10, vr.win_height - 18), 14, 'orange' if vr.pause else 'green')
 
 if __name__ == "__main__":
     main()
