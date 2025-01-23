@@ -23,8 +23,12 @@ def init():
 
     vr.grid = Grid()
 
-    test_cell = Body((5, 4))
-    vr.grid.putAt(test_cell, test_cell.pos)
+    test_cell1 = Body((5, 5))
+    test_cell2 = Body((2, 4))
+    test_cell3 = Body((7, 8))
+    vr.grid.putAt(test_cell1, test_cell1.pos)
+    vr.grid.putAt(test_cell2, test_cell2.pos)
+    vr.grid.putAt(test_cell3, test_cell3.pos)
 
     return
 

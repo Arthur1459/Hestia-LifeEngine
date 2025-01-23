@@ -23,14 +23,13 @@ class Cell:
         line, row = self.pos
         dline, drow = dir
         target = (line + dline, row + drow)
-        if isInGrid(target) and vr.grid.getAt(target).variant == BASE and vr.next_grid.getAt(target).variant == BASE: return True
+        if isInGrid(target) and vr.grid.getAt(target).variant == BASE: return True
         else: return False
     def MoveToward(self, dir):
-        #vr.next_grid.putAt(u.IdObj(), self.pos)
-        pos = self.pos
+        old_pos = self.pos
         self.pos = keepInGrid(t.Vadd(self.pos, dir))
-        vr.next_grid.putAt(self, self.pos)
-        print(f"{pos} + {dir} = {self.pos}")
+        vr.grid.clearAt(old_pos)
+        vr.grid.putAt(self, self.pos)
     def update(self):
         pass
     def draw(self):
@@ -41,11 +40,18 @@ class Body(Cell):
         super().__init__(pos)
         self.variant = BODY
     def update(self):
-        dir = (randint(-1, 1), randint(-1, 1))
-        if self.canMoveToward(dir): self.MoveToward(dir)
+        direction = self.getDirection()
+        if self.canMoveToward(direction): self.MoveToward(direction)
         else: self.MoveToward((0, 0))
     def draw(self):
         x, y, length = self.row() * cf.cell_size + 1, self.line() * cf.cell_size + 1, cf.cell_size - 2
         pg.draw.rect(vr.window, 'blue', [x, y, length, length])
         pg.draw.lines(vr.window, 'black', True, [(x + length/3, y + length/3), (x + 2*length/3, y + 2*length/3), (x + 2*length/3, y + length/3), (x + length/3, y + 2*length/3)], 6)
-
+    def getDirection(self):
+        direction = (0, 0)
+        dir_choice = randint(-1, 1)
+        if dir_choice == -1:
+            direction = (randint(-1, 1), 0)
+        elif dir_choice == 1:
+            direction = (0, randint(-1, 1))
+        return direction
