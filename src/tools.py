@@ -1,5 +1,5 @@
 from math import cos, sin, radians, degrees
-from random import random
+from random import random, randint
 
 def Vcl(f1, v1, f2, v2):
     return [f1 * v1[i] + f2 * v2[i] for i in range(min(len(v1), len(v2)))]

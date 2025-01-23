@@ -27,7 +27,7 @@ class Grid:
         for cell in self.grid:
             line, row = cell
             self.getAt(cell).draw()
-            u.Text(f"{line}x{row}", [row * cf.cell_size, line * cf.cell_size], 14, 'red')
+            #u.Text(f"{line}x{row}", [row * cf.cell_size, line * cf.cell_size], 14, 'red')
 
     def rows(self):
         return self.size[1]
