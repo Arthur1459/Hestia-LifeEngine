@@ -5,6 +5,7 @@ import utils as u
 import pygame as pg
 from utils import keepInGrid, isInGrid
 from random import randint
+from Brain import NeuralNetwork
 
 BASE = 0
 BODY = 1
@@ -43,13 +44,14 @@ class Body(Cell):
     def __init__(self, pos):
         super().__init__(pos)
         self.variant = BODY
+
         arm = Arm(t.Vadd(pos, (1, 0)), self) # TEST
-        hand = Arm(t.Vadd(arm.pos, (1, 0)), arm) # TEST
-        fingers_children = [Arm(t.Vadd(hand.pos, (1, 0)), hand), Arm(t.Vadd(hand.pos, (0, 1)), hand), Arm(t.Vadd(hand.pos, (0, -1)), hand)]
-        arm.children.append(hand)  # TEST
-        hand.children = fingers_children
         self.children = [arm] # Arm(t.Vadd(pos, (0, 1)), self), Arm(t.Vadd(pos, (-1, 0)), self), Arm(t.Vadd(pos, (0, -1)), self)
+
+        self.brain = NeuralNetwork(2, 2, ())
+
     def update(self):
+        self.brain.Mutate()
         direction = self.getDirection()
         if self.canMoveToward(direction): self.MoveToward(direction)
         else: self.MoveToward((0, 0))
@@ -58,12 +60,16 @@ class Body(Cell):
         pg.draw.rect(vr.window, 'blue', [x, y, length, length])
         pg.draw.lines(vr.window, 'black', True, [(x + length/3, y + length/3), (x + 2*length/3, y + 2*length/3), (x + 2*length/3, y + length/3), (x + length/3, y + 2*length/3)], 6)
     def getDirection(self):
+        decision = self.brain.predict((self.pos[0] % (1 + self.pos[1]), self.pos[1] / (1 + self.pos[0])))
         direction = (0, 0)
-        dir_choice = randint(-1, 1)
-        if dir_choice == -1:
-            direction = (randint(-1, 1), 0)
-        elif dir_choice == 1:
-            direction = (0, randint(-1, 1))
+        if decision[0] > 1 and abs(decision[1]) < 1 :
+            direction = (1, 0)
+        elif decision[0] < -1 and abs(decision[1]) < 1 :
+            direction = (-1, 0)
+        elif decision[1] > 1 and abs(decision[0]) < 1 :
+            direction = (0, 1)
+        elif decision[1] < -1 and abs(decision[0]) < 1 :
+            direction = (0, -1)
         return direction
 
 class Arm(Cell):

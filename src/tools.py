@@ -1,5 +1,6 @@
-from math import cos, sin, radians, degrees
+from math import cos, sin, radians, degrees, exp
 from random import random, randint
+from numpy.random import normal
 
 def Vcl(f1, v1, f2, v2):
     return [f1 * v1[i] + f2 * v2[i] for i in range(min(len(v1), len(v2)))]
@@ -47,3 +48,10 @@ def VmaxControl(v, max_abs=1):
 
 def rndInt(a, b):
     return a + int(random() * (b - a))
+
+memo_sig = {}
+def sigmoid(x):
+    if x not in memo_sig:
+        memo_sig[x] = 1/(1 + exp(-x))
+    return memo_sig[x]
+
