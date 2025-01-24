@@ -1,5 +1,5 @@
 from math import cos, sin, radians, degrees, exp
-from random import random, randint
+from random import random, randint, shuffle
 from numpy.random import normal
 
 def Vcl(f1, v1, f2, v2):
@@ -54,4 +54,7 @@ def sigmoid(x):
     if x not in memo_sig:
         memo_sig[x] = 1/(1 + exp(-x))
     return memo_sig[x]
+
+def proba(percentage):
+    return randint(1, 1000) <= 1000 * percentage/100
 

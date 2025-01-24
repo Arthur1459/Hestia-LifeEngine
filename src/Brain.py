@@ -22,7 +22,7 @@ class NeuralNetwork:
             raise ValueError("Wrong inputs ! (size issue)")
 
         row_information = np.array(inputs)
-        information = row_information / t.norm(row_information)
+        information = row_information * t.inv(t.norm(row_information))
         for layer in self.layers:
             information = layer.apply(information)
 
