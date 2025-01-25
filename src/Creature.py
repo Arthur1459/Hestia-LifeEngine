@@ -10,14 +10,17 @@ from Brain import NeuralNetwork
 BASE = 0
 BODY = 1
 ARM = 2
+REPRODUCTOR = 3
+EYES = 4
+SPIKE = 5
 
 class Cell:
     def __init__(self, pos, body_id=None):
         self.id = u.getNewId()
         self.variant = BASE
-        self.alive = True
+        self.alive, self.life = True, 100
         self.pos = tuple(pos)
-        self.children, self.dead_children = [], []
+        self.children = []
         self.father = None
         self.body_id = body_id
 
@@ -33,54 +36,86 @@ class Cell:
         else: return False
     def MoveToward(self, dir):
         vr.grid.clearAt(self.pos)
-        for child in self.children:
-            child.MoveToward(dir)
-        self.pos = keepInGrid(t.Vadd(self.pos, dir))
         if self.alive:
+            self.pos = keepInGrid(t.Vadd(self.pos, dir))
+            for child in self.children:
+                child.MoveToward(dir)
             vr.grid.putAt(self, self.pos)
 
     def die(self):
+        self.alive = False
+        self.father.children.remove(self)
+        vr.grid.clearAt(self.pos)
         for child in self.children:
             child.die()
-        self.father.dead_children.append(self)
-        self.alive = False
 
     def update(self):
-        for dead_children in self.dead_children:
-            try:
-                self.children.remove(dead_children)
-            except:
-                pass
-        self.dead_children = []
+        if self.life <= 0 and self.alive:
+            self.die()
 
     def draw(self):
         pg.draw.rect(vr.window, 'white', [self.row() * cf.cell_size, self.line() * cf.cell_size, cf.cell_size, cf.cell_size])
+    def getGlobalLife(self, mean=False):
+        life_tot = self.life
+        for child in self.children:
+            life_tot += child.getGlobalLife()
+        return life_tot if mean is False else life_tot * t.inv(1 + self.getNbTotalChildren())
+    def getNbTotalChildren(self):
+        nb_child = len(self.children)
+        for child in self.children:
+            nb_child += child.getNbTotalChildren()
+        return nb_child
 
 class Body(Cell):
-    def __init__(self, pos):
+    def __init__(self, pos, genetic=None):
         super().__init__(pos)
         self.variant = BODY
         self.body_id = self.id
 
-        arm = Arm(t.Vadd(pos, (1, 0)), self, self.body_id) # TEST
-        self.children = [arm] # Arm(t.Vadd(pos, (0, 1)), self), Arm(t.Vadd(pos, (-1, 0)), self), Arm(t.Vadd(pos, (0, -1)), self)
-
-        self.brain = NeuralNetwork(2, 2, (4,))
+        if genetic is None:
+            self.motricity_brain = NeuralNetwork(2, 3, (4,))
+            self.behavior_brain = NeuralNetwork(2, 6, (3,))
+        else:
+            self.motricity_brain = NeuralNetwork(copy_from=genetic['motricity'])
+            self.behavior_brain = NeuralNetwork(copy_from=genetic['behavior'])
 
     def update(self):
         super().update()
-        self.evolve()
-        direction = self.getDirection()
-        if self.canMoveToward(direction): self.MoveToward(direction)
-        else: self.MoveToward((0, 0))
-
-    def evolve(self):
-        self.brain.Mutate()
         for child in self.children:
-            child.evolve()
+            child.update()
+
+        behavior_input = (self.getGlobalLife(mean=True), self.getNbTotalChildren())
+        reproduce_treshold, reproduce_decision, grow_decision, grow_treshold, grow_type_decision, grow_type_treshold = self.behavior_brain.predict(behavior_input)
+
         can_arm, pos_arm = self.canGenerateArm()
         if can_arm and t.proba(1):
             self.children.append(Arm(pos_arm, self, self.body_id))
+
+        can_reproduce, reproduce_pos = self.canReproduce()
+        if can_reproduce and reproduce_decision > reproduce_treshold and self.life > 50:
+            self.life = self.life / 2
+            new_born = Body(reproduce_pos, genetic={'motricity': self.motricity_brain, 'behavior': self.behavior_brain})
+            new_born.motricity_brain.Mutate()
+            new_born.behavior_brain.Mutate()
+            new_born.life = self.life
+            vr.grid.putAt(new_born, reproduce_pos)
+
+        if grow_decision > grow_treshold:
+            grow_type_decision = abs(grow_type_decision)
+            if grow_type_decision < 0.5 * grow_type_treshold: grow_type = ARM
+            elif grow_type_decision < 1. * grow_type_treshold: grow_type = REPRODUCTOR
+            # elif grow_type_decision < 2.5 * grow_type_treshold: grow_type = EYES
+            else: grow_type = ARM
+            try:
+                _ = t.rndChoose(self.children).Grow(grow_type)
+            except:
+                pass
+
+        self.life = min(100., self.life + 1.)
+        # Pos for next step
+        direction = self.getDirection()
+        if self.canMoveToward(direction): self.MoveToward(direction)
+        else: self.MoveToward((0, 0))
 
     def canGenerateArm(self):
         potential_pos = [t.Vadd(self.pos, (0, 1)), t.Vadd(self.pos, (0, -1)), t.Vadd(self.pos, (1, 0)), t.Vadd(self.pos, (-1, 0))]
@@ -89,21 +124,31 @@ class Body(Cell):
             if isInGrid(pos) and vr.grid.getAt(tuple(pos)).variant == BASE:
                 return True, tuple(pos)
         return False, None
+    def canReproduce(self):
+        for child in self.children:
+            free_pos_found, free_pos = child.getReproducePos()
+            if free_pos_found:
+                return True, tuple(free_pos)
+        return False, None
 
     def draw(self):
         x, y, length = self.row() * cf.cell_size, self.line() * cf.cell_size, cf.cell_size
         pg.draw.rect(vr.window, 'blue', [x, y, length, length])
     def getDirection(self):
-        decision = self.brain.predict((self.pos[0] % (1 + self.pos[1]), self.pos[1] / (1 + self.pos[0])))
+
+        motricity_input = (self.getGlobalLife(mean=True)/100, self.getNbTotalChildren())
+        decision = self.motricity_brain.predict(motricity_input)
+        threshold, dir_decision_1, dir_decision_2 = decision
+
+        threshold = 0.5 * threshold
         direction = (0, 0)
-        threshold = 0.1
-        if decision[0] > threshold and abs(decision[1]) < threshold :
+        if dir_decision_1 > threshold and abs(dir_decision_2) < abs(threshold) :
             direction = (1, 0)
-        elif decision[0] < -threshold and abs(decision[1]) < threshold :
+        elif dir_decision_1 < -threshold and abs(dir_decision_2) < abs(threshold) :
             direction = (-1, 0)
-        elif decision[1] > threshold and abs(decision[0]) < threshold :
+        elif dir_decision_2 > threshold and abs(dir_decision_1) < abs(threshold) :
             direction = (0, 1)
-        elif decision[1] < -threshold and abs(decision[0]) < threshold :
+        elif dir_decision_2 < -threshold and abs(dir_decision_1) < abs(threshold) :
             direction = (0, -1)
         return direction
 
@@ -112,24 +157,69 @@ class Arm(Cell):
         super().__init__(pos)
         self.variant = ARM
         self.father = father
+        self.life = self.father.life
         self.body_id = body_id
     def draw(self):
         x, y, length = self.row() * cf.cell_size, self.line() * cf.cell_size, cf.cell_size
         pg.draw.rect(vr.window, 'grey', [x, y, length, length])
-    def evolve(self):
-        if t.proba(0.8 * (t.inv(1 + len(self.children)) ** 2)):
-            self.die()
-            return
+    def update(self):
+        super().update()
+
+        self.life += -0.1
+
         for child in self.children:
-            child.evolve()
-        can_grow, pos_grow = self.canGrow()
-        if can_grow and t.proba(1):
-            self.children.append(Arm(pos_grow, self, self.body_id))
+            child.update()
+
+    def Grow(self, grow_type):
+        have_grew = False
+        for child in t.Shuffle(self.children):
+             have_grew = child.Grow(grow_type)
+        if have_grew is False:
+            can_grow, pos_grow = self.canGrow()
+            if can_grow:
+                have_grew = True
+                self.life = self.life / 2 - 1
+                if   grow_type == ARM:          new_child = Arm(pos_grow, self, self.body_id)
+                elif grow_type == REPRODUCTOR:  new_child = Reproductor(pos_grow, self, self.body_id)
+                else:                           new_child = Arm(pos_grow, self, self.body_id)
+                self.children.append(new_child)
+        return have_grew
 
     def canGrow(self):
         potential_pos = [t.Vadd(self.pos, (0, 1)), t.Vadd(self.pos, (0, -1)), t.Vadd(self.pos, (1, 0)), t.Vadd(self.pos, (-1, 0))]
-        t.shuffle(potential_pos)
-        for pos in potential_pos:
+        for pos in t.Shuffle(potential_pos):
             if isInGrid(pos) and vr.grid.getAt(tuple(pos)).variant == BASE:
                 return True, tuple(pos)
+        return False, None
+
+    def getReproducePos(self):
+        for child in self.children:
+            free_pos_found, free_pos = child.getReproducePos()
+            if free_pos_found:
+                return True, tuple(free_pos)
+        return False, None
+
+class Reproductor(Cell):
+    def __init__(self, pos, father, body_id):
+        super().__init__(pos)
+        self.variant = REPRODUCTOR
+        self.father = father
+        self.life = self.father.life
+        self.body_id = body_id
+    def draw(self):
+        x, y, length = self.row() * cf.cell_size, self.line() * cf.cell_size, cf.cell_size
+        pg.draw.rect(vr.window, (250, 190, 80), [x, y, length, length])
+    def update(self):
+        super().update()
+        for child in self.children:
+            child.update()
+
+    def getReproducePos(self):
+        potential_pos = [t.Vadd(self.pos, (0, 1)), t.Vadd(self.pos, (0, -1)), t.Vadd(self.pos, (1, 0)),
+                         t.Vadd(self.pos, (-1, 0))]
+        t.shuffle(potential_pos)
+        for pos in potential_pos:
+            if isInGrid(pos):
+                if vr.grid.getAt(tuple(pos)).variant == BASE:
+                    return True, tuple(pos)
         return False, None

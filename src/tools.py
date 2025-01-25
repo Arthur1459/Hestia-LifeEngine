@@ -49,6 +49,14 @@ def VmaxControl(v, max_abs=1):
 def rndInt(a, b):
     return a + int(random() * (b - a))
 
+def Shuffle(L):
+    L_shuffled = L[:]
+    shuffle(L_shuffled)
+    return L_shuffled
+
+def rndChoose(L):
+    return L[rndInt(0, len(L) - 1)]
+
 memo_sig = {}
 def sigmoid(x):
     if x not in memo_sig:
@@ -56,5 +64,5 @@ def sigmoid(x):
     return memo_sig[x]
 
 def proba(percentage):
-    return randint(1, 1000) <= 1000 * percentage/100
+    return randint(1, 10000) <= 10000 * percentage/100
 

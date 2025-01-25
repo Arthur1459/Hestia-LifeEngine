@@ -25,9 +25,7 @@ class Grid:
 
     def draw(self):
         for cell in self.grid:
-            line, row = cell
             self.getAt(cell).draw()
-            #u.Text(f"{line}x{row}", [row * cf.cell_size, line * cf.cell_size], 14, 'red')
 
     def rows(self):
         return self.size[1]
@@ -45,5 +43,5 @@ def NewCell(pos):
     return {cell.id: cell}
 
 def GridPrint(grid):
-    print({pos: grid.grid[pos].obj.__class__ for pos in grid.grid})
+    print({pos: grid.grid[pos].__class__ for pos in grid.grid})
 

@@ -8,5 +8,7 @@ fullscreen = False
 
 fps = 30
 update_rate = 0.05 # second per update
-cell_size = 20
+
+cell_size = 8
 grid_size = 800 // cell_size
+nb_creatures = 300
