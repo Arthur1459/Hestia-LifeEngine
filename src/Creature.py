@@ -47,7 +47,10 @@ class Cell:
 
     def update(self):
         for dead_children in self.dead_children:
-            self.children.remove(dead_children)
+            try:
+                self.children.remove(dead_children)
+            except:
+                pass
         self.dead_children = []
 
     def draw(self):
@@ -62,7 +65,7 @@ class Body(Cell):
         arm = Arm(t.Vadd(pos, (1, 0)), self, self.body_id) # TEST
         self.children = [arm] # Arm(t.Vadd(pos, (0, 1)), self), Arm(t.Vadd(pos, (-1, 0)), self), Arm(t.Vadd(pos, (0, -1)), self)
 
-        self.brain = NeuralNetwork(2, 2, (2,))
+        self.brain = NeuralNetwork(2, 2, (4,))
 
     def update(self):
         super().update()
@@ -90,7 +93,6 @@ class Body(Cell):
     def draw(self):
         x, y, length = self.row() * cf.cell_size, self.line() * cf.cell_size, cf.cell_size
         pg.draw.rect(vr.window, 'blue', [x, y, length, length])
-        pg.draw.lines(vr.window, 'black', True, [(x + length/3, y + length/3), (x + 2*length/3, y + 2*length/3), (x + 2*length/3, y + length/3), (x + length/3, y + 2*length/3)], 6)
     def getDirection(self):
         decision = self.brain.predict((self.pos[0] % (1 + self.pos[1]), self.pos[1] / (1 + self.pos[0])))
         direction = (0, 0)
@@ -114,7 +116,6 @@ class Arm(Cell):
     def draw(self):
         x, y, length = self.row() * cf.cell_size, self.line() * cf.cell_size, cf.cell_size
         pg.draw.rect(vr.window, 'grey', [x, y, length, length])
-        pg.draw.circle(vr.window, 'black', [x + length/2, y + length/2], cf.cell_size/4, 5)
     def evolve(self):
         if t.proba(0.8 * (t.inv(1 + len(self.children)) ** 2)):
             self.die()
