@@ -30,11 +30,13 @@ class Cell:
         vr.grid.clearAt(self.pos)
 
         if self.alive:
-            self.pos = keepInGrid(t.Vadd(self.pos, dir))
+            new_pos = keepInGrid(t.Vadd(self.pos, dir))
+            if t.distance(new_pos, self.pos) < 2:
+                self.pos = new_pos
             for child in self.children:
                 child.MoveToward(dir)
 
-            self.life += -1
+            self.life += -cf.food_moving_lost
             if vr.grid.getAt(self.pos).variant == cf.FOOD:
                 self.life += vr.grid.getAt(self.pos).food
 
@@ -48,8 +50,12 @@ class Cell:
             child.die()
 
     def update(self):
-        if self.life <= 0 and self.alive:
+        if (self.life <= 0 and self.alive) or (self.father is not None and self.father.alive is False):
             self.die()
+        if self.father is not None:
+            if self.life > 100:
+                self.father.life += self.life - 100
+                self.life = 100
 
     def draw(self):
         pg.draw.rect(vr.window, 'white', [self.row() * cf.cell_size, self.line() * cf.cell_size, cf.cell_size, cf.cell_size])
@@ -71,7 +77,7 @@ class Body(Cell):
         self.body_id = self.id
 
         if genetic is None:
-            self.motricity_brain = NeuralNetwork(2, 3, (4,))
+            self.motricity_brain = NeuralNetwork(4, 3, (4,))
             self.behavior_brain = NeuralNetwork(2, 6, (3,))
         else:
             self.motricity_brain = NeuralNetwork(copy_from=genetic['motricity'])
@@ -90,7 +96,7 @@ class Body(Cell):
             self.children.append(Arm(pos_arm, self, self.body_id))
 
         can_reproduce, reproduce_pos = self.canReproduce()
-        if can_reproduce and reproduce_decision > reproduce_treshold:
+        if can_reproduce and abs(reproduce_decision) > reproduce_treshold:
             self.life = self.life * 0.8
             new_born = Body(reproduce_pos, genetic={'motricity': self.motricity_brain, 'behavior': self.behavior_brain})
             new_born.motricity_brain.Mutate()
@@ -98,19 +104,20 @@ class Body(Cell):
             new_born.life = self.life
             vr.grid.putAt(new_born, reproduce_pos)
 
+        grow_type_treshold = abs(grow_type_treshold)
         if abs(grow_decision) > 0.5 * grow_treshold:
-            grow_type_decision = abs(grow_type_decision)
-            if grow_type_decision < 0.5 * grow_type_treshold: grow_type = cf.ARM
-            else: grow_type = cf.REPRODUCTOR
+            if grow_type_decision < 0. * grow_type_treshold: grow_type = cf.ARM
+            elif grow_type_decision < 3. * grow_type_treshold: grow_type = cf.REPRODUCTOR
+            elif grow_type_decision < 5. * grow_type_treshold: grow_type = cf.SPIKE
             # elif grow_type_decision < 2.5 * grow_type_treshold: grow_type = EYES
-            #else: grow_type = cf.ARM
+            else: grow_type = cf.ARM
             try:
                 _ = t.rndChoose(self.children).Grow(grow_type)
             except:
                 pass
 
-        self.life += -0.1
-        self.life = min(100., self.life)
+        self.life += -cf.food_general_lost
+        self.life = min(cf.max_body_food_storage, self.life)
         # Pos for next step
         direction = self.getDirection()
         if self.canMoveToward(direction): self.MoveToward(direction)
@@ -120,7 +127,7 @@ class Body(Cell):
         potential_pos = [t.Vadd(self.pos, (0, 1)), t.Vadd(self.pos, (0, -1)), t.Vadd(self.pos, (1, 0)), t.Vadd(self.pos, (-1, 0))]
         t.shuffle(potential_pos)
         for pos in potential_pos:
-            if isInGrid(pos) and vr.grid.getAt(tuple(pos)).variant == cf.BASE:
+            if isInGrid(pos) and vr.grid.getAt(tuple(pos)).variant in (cf.BASE, cf.FOOD):
                 return True, tuple(pos)
         return False, None
     def canReproduce(self):
@@ -135,7 +142,7 @@ class Body(Cell):
         pg.draw.rect(vr.window, 'blue', [x, y, length, length])
     def getDirection(self):
 
-        motricity_input = (self.getGlobalLife(mean=True)/100, self.getNbTotalChildren())
+        motricity_input = (self.getGlobalLife(mean=True)/100, self.getNbTotalChildren(), self.line()/vr.grid.lines(), self.row()/vr.grid.rows())
         decision = self.motricity_brain.predict(motricity_input)
         threshold, dir_decision_1, dir_decision_2 = decision
 
@@ -164,15 +171,14 @@ class Arm(Cell):
     def update(self):
         super().update()
 
-        self.life += -0.1
-
         for child in self.children:
             child.update()
 
     def Grow(self, grow_type):
         have_grew = False
         for child in t.Shuffle(self.children):
-             have_grew = child.Grow(grow_type)
+            if child.variant == cf.ARM:
+                have_grew = child.Grow(grow_type)
         if have_grew is False:
             can_grow, pos_grow = self.canGrow()
             if can_grow:
@@ -180,22 +186,24 @@ class Arm(Cell):
                 self.life = self.life * 0.6
                 if   grow_type == cf.ARM:          new_child = Arm(pos_grow, self, self.body_id)
                 elif grow_type == cf.REPRODUCTOR:  new_child = Reproductor(pos_grow, self, self.body_id)
-                else:                           new_child = Arm(pos_grow, self, self.body_id)
+                elif grow_type == cf.SPIKE:  new_child = Spike(pos_grow, self, self.body_id)
+                else:                              new_child = Arm(pos_grow, self, self.body_id)
                 self.children.append(new_child)
         return have_grew
 
     def canGrow(self):
         potential_pos = [t.Vadd(self.pos, (0, 1)), t.Vadd(self.pos, (0, -1)), t.Vadd(self.pos, (1, 0)), t.Vadd(self.pos, (-1, 0))]
         for pos in t.Shuffle(potential_pos):
-            if isInGrid(pos) and vr.grid.getAt(tuple(pos)).variant == cf.BASE:
+            if isInGrid(pos) and vr.grid.getAt(tuple(pos)).variant in (cf.BASE, cf.FOOD):
                 return True, tuple(pos)
         return False, None
 
     def getReproducePos(self):
         for child in self.children:
-            free_pos_found, free_pos = child.getReproducePos()
-            if free_pos_found:
-                return True, tuple(free_pos)
+            if child.variant in (cf.ARM, cf.REPRODUCTOR):
+                free_pos_found, free_pos = child.getReproducePos()
+                if free_pos_found:
+                    return True, tuple(free_pos)
         return False, None
 
 class Reproductor(Cell):
@@ -219,6 +227,32 @@ class Reproductor(Cell):
         t.shuffle(potential_pos)
         for pos in potential_pos:
             if isInGrid(pos):
-                if vr.grid.getAt(tuple(pos)).variant == cf.BASE:
+                if vr.grid.getAt(tuple(pos)).variant in (cf.BASE, cf.FOOD):
                     return True, tuple(pos)
         return False, None
+
+class Spike(Cell):
+    def __init__(self, pos, father, body_id):
+        super().__init__(pos)
+        self.variant = cf.SPIKE
+        self.father = father
+        self.life = self.father.life
+        self.body_id = body_id
+    def draw(self):
+        x, y, length = self.row() * cf.cell_size, self.line() * cf.cell_size, cf.cell_size
+        pg.draw.rect(vr.window, (200, 0, 0), [x, y, length, length])
+    def update(self):
+        super().update()
+        for child in self.children:
+            child.update()
+
+        potential_pos = [t.Vadd(self.pos, (0, 1)), t.Vadd(self.pos, (0, -1)), t.Vadd(self.pos, (1, 0)),
+                         t.Vadd(self.pos, (-1, 0))]
+        for pos in potential_pos:
+            if isInGrid(pos):
+                cell_touch = vr.grid.getAt(tuple(pos))
+                if cell_touch.variant not in (cf.BASE, cf.FOOD):
+                    if cell_touch.body_id != self.body_id:
+                        self.life += cell_touch.life
+                        cell_touch.die()
+

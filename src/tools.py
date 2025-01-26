@@ -64,5 +64,5 @@ def sigmoid(x):
     return memo_sig[x]
 
 def proba(percentage):
-    return randint(1, 10000) <= 10000 * percentage/100
+    return randint(1, 1000000) <= 1000000 * percentage/100
 

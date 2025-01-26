@@ -11,7 +11,7 @@ class Food:
 
         self.variant = cf.FOOD
         self.pos = tuple(pos)
-        self.food = 5
+        self.food = 2
 
     def update(self):
         if t.proba(1):

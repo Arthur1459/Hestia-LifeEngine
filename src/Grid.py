@@ -3,7 +3,7 @@ import vars as vr
 import tools as t
 import utils as u
 import pygame as pg
-from Creature import Cell
+from Creature import Cell, Body
 from Environement import Food
 
 class Grid:
@@ -16,16 +16,21 @@ class Grid:
 
         self._to_clear = []
     def update(self):
+        vr.id_updated = {}
         for cell_pos in self.grid:
             cell = self.getAt(cell_pos)
+            if cell.id in vr.id_updated: continue
+            else: vr.id_updated[cell.id] = True
             try:
                 if cell.variant == cf.BASE:
-                    if t.proba(0.01):
+                    if t.proba(0.005):
                         vr.grid.putAt(Food(cell_pos), cell_pos)
+                elif t.proba(0.001) and cell.variant == cf.FOOD:
+                    vr.grid.putAt(Body(cell_pos), cell_pos)
                 else:
                     cell.update()
             except AttributeError:
-                print(f"## {self.getAt(cell).__class__} at {cell} have no 'update' method ! ##")
+                print(f"## ERROR during updating {self.getAt(cell_pos).__class__} at {cell_pos} ! ##")
 
         self.draw()
         return

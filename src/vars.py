@@ -19,4 +19,4 @@ cursor = (0, 0)
 id = 0
 
 grid = None
-next_grid = None
+id_updated = {}
