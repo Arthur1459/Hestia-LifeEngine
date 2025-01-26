@@ -4,20 +4,12 @@ import tools as t
 import utils as u
 import pygame as pg
 from utils import keepInGrid, isInGrid
-from random import randint
 from Brain import NeuralNetwork
-
-BASE = 0
-BODY = 1
-ARM = 2
-REPRODUCTOR = 3
-EYES = 4
-SPIKE = 5
 
 class Cell:
     def __init__(self, pos, body_id=None):
         self.id = u.getNewId()
-        self.variant = BASE
+        self.variant = cf.BASE
         self.alive, self.life = True, 100
         self.pos = tuple(pos)
         self.children = []
@@ -32,19 +24,25 @@ class Cell:
         line, row = self.pos
         dline, drow = dir
         target = (line + dline, row + drow)
-        if isInGrid(target) and (vr.grid.getAt(target).variant == BASE or vr.grid.getAt(target).body_id == self.body_id) and all([child.canMoveToward(dir) for child in self.children]): return True
+        if isInGrid(target) and (vr.grid.getAt(target).variant in (cf.BASE, cf.FOOD) or vr.grid.getAt(target).body_id == self.body_id) and all([child.canMoveToward(dir) for child in self.children]): return True
         else: return False
     def MoveToward(self, dir):
         vr.grid.clearAt(self.pos)
+
         if self.alive:
             self.pos = keepInGrid(t.Vadd(self.pos, dir))
             for child in self.children:
                 child.MoveToward(dir)
+
+            self.life += -1
+            if vr.grid.getAt(self.pos).variant == cf.FOOD:
+                self.life += vr.grid.getAt(self.pos).food
+
             vr.grid.putAt(self, self.pos)
 
     def die(self):
         self.alive = False
-        self.father.children.remove(self)
+        if self.father is not None: self.father.children.remove(self)
         vr.grid.clearAt(self.pos)
         for child in self.children:
             child.die()
@@ -69,7 +67,7 @@ class Cell:
 class Body(Cell):
     def __init__(self, pos, genetic=None):
         super().__init__(pos)
-        self.variant = BODY
+        self.variant = cf.BODY
         self.body_id = self.id
 
         if genetic is None:
@@ -92,26 +90,27 @@ class Body(Cell):
             self.children.append(Arm(pos_arm, self, self.body_id))
 
         can_reproduce, reproduce_pos = self.canReproduce()
-        if can_reproduce and reproduce_decision > reproduce_treshold and self.life > 50:
-            self.life = self.life / 2
+        if can_reproduce and reproduce_decision > reproduce_treshold:
+            self.life = self.life * 0.8
             new_born = Body(reproduce_pos, genetic={'motricity': self.motricity_brain, 'behavior': self.behavior_brain})
             new_born.motricity_brain.Mutate()
             new_born.behavior_brain.Mutate()
             new_born.life = self.life
             vr.grid.putAt(new_born, reproduce_pos)
 
-        if grow_decision > grow_treshold:
+        if abs(grow_decision) > 0.5 * grow_treshold:
             grow_type_decision = abs(grow_type_decision)
-            if grow_type_decision < 0.5 * grow_type_treshold: grow_type = ARM
-            elif grow_type_decision < 1. * grow_type_treshold: grow_type = REPRODUCTOR
+            if grow_type_decision < 0.5 * grow_type_treshold: grow_type = cf.ARM
+            else: grow_type = cf.REPRODUCTOR
             # elif grow_type_decision < 2.5 * grow_type_treshold: grow_type = EYES
-            else: grow_type = ARM
+            #else: grow_type = cf.ARM
             try:
                 _ = t.rndChoose(self.children).Grow(grow_type)
             except:
                 pass
 
-        self.life = min(100., self.life + 1.)
+        self.life += -0.1
+        self.life = min(100., self.life)
         # Pos for next step
         direction = self.getDirection()
         if self.canMoveToward(direction): self.MoveToward(direction)
@@ -121,7 +120,7 @@ class Body(Cell):
         potential_pos = [t.Vadd(self.pos, (0, 1)), t.Vadd(self.pos, (0, -1)), t.Vadd(self.pos, (1, 0)), t.Vadd(self.pos, (-1, 0))]
         t.shuffle(potential_pos)
         for pos in potential_pos:
-            if isInGrid(pos) and vr.grid.getAt(tuple(pos)).variant == BASE:
+            if isInGrid(pos) and vr.grid.getAt(tuple(pos)).variant == cf.BASE:
                 return True, tuple(pos)
         return False, None
     def canReproduce(self):
@@ -155,7 +154,7 @@ class Body(Cell):
 class Arm(Cell):
     def __init__(self, pos, father, body_id):
         super().__init__(pos)
-        self.variant = ARM
+        self.variant = cf.ARM
         self.father = father
         self.life = self.father.life
         self.body_id = body_id
@@ -178,9 +177,9 @@ class Arm(Cell):
             can_grow, pos_grow = self.canGrow()
             if can_grow:
                 have_grew = True
-                self.life = self.life / 2 - 1
-                if   grow_type == ARM:          new_child = Arm(pos_grow, self, self.body_id)
-                elif grow_type == REPRODUCTOR:  new_child = Reproductor(pos_grow, self, self.body_id)
+                self.life = self.life * 0.6
+                if   grow_type == cf.ARM:          new_child = Arm(pos_grow, self, self.body_id)
+                elif grow_type == cf.REPRODUCTOR:  new_child = Reproductor(pos_grow, self, self.body_id)
                 else:                           new_child = Arm(pos_grow, self, self.body_id)
                 self.children.append(new_child)
         return have_grew
@@ -188,7 +187,7 @@ class Arm(Cell):
     def canGrow(self):
         potential_pos = [t.Vadd(self.pos, (0, 1)), t.Vadd(self.pos, (0, -1)), t.Vadd(self.pos, (1, 0)), t.Vadd(self.pos, (-1, 0))]
         for pos in t.Shuffle(potential_pos):
-            if isInGrid(pos) and vr.grid.getAt(tuple(pos)).variant == BASE:
+            if isInGrid(pos) and vr.grid.getAt(tuple(pos)).variant == cf.BASE:
                 return True, tuple(pos)
         return False, None
 
@@ -202,7 +201,7 @@ class Arm(Cell):
 class Reproductor(Cell):
     def __init__(self, pos, father, body_id):
         super().__init__(pos)
-        self.variant = REPRODUCTOR
+        self.variant = cf.REPRODUCTOR
         self.father = father
         self.life = self.father.life
         self.body_id = body_id
@@ -220,6 +219,6 @@ class Reproductor(Cell):
         t.shuffle(potential_pos)
         for pos in potential_pos:
             if isInGrid(pos):
-                if vr.grid.getAt(tuple(pos)).variant == BASE:
+                if vr.grid.getAt(tuple(pos)).variant == cf.BASE:
                     return True, tuple(pos)
         return False, None
