@@ -2,7 +2,7 @@ import os
 import sys
 
 import pygame as pg
-
+import tools as t
 import vars as vr
 
 
@@ -19,11 +19,25 @@ def initInputs():
     resetInputs()
     vr.inputs["SPACE"] = False
     vr.inputs["ESC"] = False
+    vr.inputs["H"] = False
+    vr.inputs["S"] = False
+    vr.inputs["X"] = False
+    vr.inputs["D"] = False
+    vr.inputs["C"] = False
+    vr.inputs["F"] = False
+    vr.inputs["V"] = False
 
 def getInputs():
     keys = pg.key.get_pressed()
     if keys[pg.K_SPACE] : vr.inputs["SPACE"] = True
     if keys[pg.K_ESCAPE]: vr.inputs["ESC"] = True
+    if keys[pg.K_h]: vr.inputs["H"] = True
+    if keys[pg.K_s]: vr.inputs["S"] = True
+    if keys[pg.K_x]: vr.inputs["X"] = True
+    if keys[pg.K_d]: vr.inputs["D"] = True
+    if keys[pg.K_c]: vr.inputs["C"] = True
+    if keys[pg.K_f]: vr.inputs["F"] = True
+    if keys[pg.K_v]: vr.inputs["V"] = True
 
 def resetInputs():
     vr.inputs = {key: False for key in vr.inputs}
@@ -68,3 +82,6 @@ def keepInGrid(pos):
 
 def isInGrid(pos):
     return 0 <= pos[0] < vr.grid.lines() and 0 <= pos[1] < vr.grid.rows()
+
+def rndColor():
+    return t.rndInt(0, 250), t.rndInt(0, 250), t.rndInt(0, 250)

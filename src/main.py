@@ -23,10 +23,6 @@ def init():
 
     vr.grid = Grid()
 
-    for i in range(cf.nb_creatures):
-        test_cell = Body((t.randint(1, cf.grid_size - 4), t.randint(1, cf.grid_size - 2)))
-        vr.grid.putAt(test_cell, test_cell.pos)
-
     return
 
 def main():
@@ -38,7 +34,7 @@ def main():
 
         u.resetInputs()
         while time.time() - vr.t < cf.update_rate:
-            u.getInputs()
+            pass
         vr.t = time.time()
 
         for event in pg.event.get():
@@ -75,12 +71,27 @@ def post_update():
     return
 
 def always_do_pre():
+    u.getInputs()
     if vr.inputs['ESC']: vr.running = False
     if vr.inputs['SPACE'] and u.canKey(): vr.pause = False if vr.pause else True
+    if vr.inputs['H'] and u.canKey(): cf.highlight_creatures = False if cf.highlight_creatures else True
+
+    if vr.inputs['S'] and u.canKey(): cf.food_moving_lost = round(max(0., cf.food_moving_lost + 0.1), 1)
+    if vr.inputs['X'] and u.canKey(): cf.food_moving_lost = round(max(0., cf.food_moving_lost - 0.1), 1)
+
+    if vr.inputs['D'] and u.canKey(): cf.food_general_lost = round(max(0., cf.food_general_lost + 0.1), 1)
+    if vr.inputs['C'] and u.canKey(): cf.food_general_lost = round(max(0., cf.food_general_lost - 0.1), 1)
+
+    if vr.inputs['F'] and u.canKey(): cf.food_grow_proba = round(max(0., cf.food_grow_proba + 0.1), 1)
+    if vr.inputs['V'] and u.canKey(): cf.food_grow_proba = round(max(0., cf.food_grow_proba - 0.1), 1)
 
 def always_do_post():
     pg.draw.rect(vr.window, 'black', [0, vr.win_height - 20, vr.win_width, 20])
-    u.Text("Generation " + str(vr.nb_updates), (10, vr.win_height - 18), 14, 'orange' if vr.pause else 'green')
+    u.Text("Generation " + str(vr.nb_updates), (8, vr.win_height - 18), 14, 'orange' if vr.pause else 'green')
+    u.Text("Bodies " + str(vr.nb_bodies), (140, vr.win_height - 18), 14, (0, 70, 250))
+
+    u.Text("loss : move= " + str(cf.food_moving_lost) + " | general= " + str(cf.food_general_lost), (220, vr.win_height - 18), 14, (150, 200, 0))
+    u.Text("food spread : " + str(cf.food_grow_proba), (500, vr.win_height - 18), 14, (10, 100, 0))
 
 if __name__ == "__main__":
     main()

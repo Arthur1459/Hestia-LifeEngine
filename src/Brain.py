@@ -24,6 +24,7 @@ class NeuralNetwork:
 
     def predict(self, inputs):
         if len(inputs) != self.nb_inputs:
+            print(f"Only {self.nb_inputs} inputs accepted ! : \n{inputs}")
             raise ValueError("Wrong inputs ! (size issue)")
 
         row_information = np.array(inputs)
@@ -43,9 +44,10 @@ class NeuralNetwork:
             self.NewNeuron(at_layer=t.randint(0, len(self.layers) - 2))
         for layer in self.layers: layer.Mutate(spread=spread)
 
-    def NewInput(self):
-        self.nb_inputs += 1
-        self.layers[0].NewInput()
+    def NewInput(self, amount=1):
+        for _ in range(amount):
+            self.nb_inputs += 1
+            self.layers[0].NewInput()
     def NewNeuron(self, at_layer=0, amount=1):
         if at_layer == -1:
             at_layer = len(self.layers) - 1

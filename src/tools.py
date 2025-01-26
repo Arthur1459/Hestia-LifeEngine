@@ -1,5 +1,7 @@
 from math import cos, sin, radians, degrees, exp
 from random import random, randint, shuffle
+
+import numpy as np
 from numpy.random import normal
 
 def Vcl(f1, v1, f2, v2):
@@ -16,6 +18,19 @@ def Vmul(v, f):
 
 def VxV(v1, v2):
     return [v1[i] * v2[i] for i in range(min(len(v1), len(v2)))]
+
+def MakeVectorIn1D(V):
+    new_v = []
+    for v_part in V:
+        if isinstance(v_part, np.ndarray):
+            new_v += MakeVectorIn1D(list(v_part))
+        elif isinstance(v_part, list):
+            new_v += MakeVectorIn1D(v_part)
+        elif isinstance(v_part, tuple):
+            new_v += MakeVectorIn1D(list(v_part))
+        else:
+            new_v.append(v_part)
+    return new_v
 
 def normalise(v):
     return Vmul(v, inv(norm(v)))

@@ -19,4 +19,6 @@ cursor = (0, 0)
 id = 0
 
 grid = None
+nb_bodies = 0
+creatures = {}
 id_updated = {}
