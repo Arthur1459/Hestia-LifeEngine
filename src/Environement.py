@@ -11,7 +11,7 @@ class Food:
 
         self.variant = cf.FOOD
         self.pos = tuple(pos)
-        self.food = 2
+        self.food = cf.life_amount_per_food
 
     def update(self):
         if t.proba(cf.food_grow_proba):

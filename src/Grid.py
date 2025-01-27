@@ -38,9 +38,12 @@ class Grid:
         return
 
     def add_initial_elements(self):
+        # Add initial Food
         for pos in self.grid:
             if t.proba(cf.food_init_percentage):
                 self.putAt(Food(pos), pos)
+
+        # Create walls at the edges of the map (not necessary)
         for line in range(self.lines()):
             self.putAt(Wall((line, 0)), (line, 0))
             self.putAt(Wall((line, self.rows() - 1)), (line, self.rows() - 1))
@@ -48,6 +51,7 @@ class Grid:
             self.putAt(Wall((0, row)), (0, row))
             self.putAt(Wall((self.lines() - 1, row)), (self.lines() - 1, row))
 
+        # Create 4 compartments which only communicate at the middle
         middle_row = self.rows()//2
         middle_line = self.lines()//2
         half_gap = 2

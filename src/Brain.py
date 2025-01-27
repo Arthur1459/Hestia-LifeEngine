@@ -37,7 +37,7 @@ class NeuralNetwork:
 
         return information
 
-    def Mutate(self, spread=0.2, new_neuron=0.2, new_layer=0.1):
+    def Mutate(self, spread=cf.mutation_spread, new_neuron=cf.new_neuron_proba, new_layer=cf.new_layer_proba):
         if t.proba(new_layer):
             self.NewLayer(nb_neurons=1, layer_at=t.randint(0, len(self.layers) - 1))
         if t.proba(new_neuron) and len(self.layers) > 1:
