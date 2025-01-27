@@ -30,4 +30,4 @@ You still need to run `main.py`.
 
 ### How it looks : Video
 
-https://www.youtube.com/watch?v=lEb7CYoWC1o
+![Video Demo](https://www.youtube.com/watch?v=lEb7CYoWC1o)
