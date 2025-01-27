@@ -31,5 +31,5 @@ You still need to run `main.py`.
 ### How it looks : Video
 
 
-[![Video Demo](https://www.youtube.com/watch?v=lEb7CYoWC1o)](./img_readme/ytb_viewer.png)
+[![Video Demo](./img_readme/ytb_viewer.png)](https://www.youtube.com/watch?v=lEb7CYoWC1o)
 
