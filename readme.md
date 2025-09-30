@@ -3,7 +3,7 @@
 ### Overview [DEMO VIDEO](https://youtu.be/lEb7CYoWC1o?si=CWOLG2lX7KmSP1vd)
 Hestia is a 'Cellular Life Engine': in a world, [creature](./src/Creature.py) can grow, reproduce and evolve according to natural selection.
 
-Each creature have a multiple brains ([Neural Network](./src/Brain.py)) for their possible actions (Moving, Reproduce, Grow...) according to the information that the creature have (Itself, close environment, eyes..).
+Each creature have specialized brains ([Neural Network](./src/Brain.py)) for their possible actions (Moving, Reproduce, Grow...) according to the information that the creature have (Itself, close environment, eyes..).
 
 The creature is composed of a BODY which is its main organ (the brain). From it, ARM can be generated as children of the BODY. And each ARM can have children like other ARM or SPIKE or REPRODUCTOR or even EYE.
 Each cell which is part of a creature have a father-cell and children-cells.
