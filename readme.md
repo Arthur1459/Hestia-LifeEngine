@@ -6,7 +6,7 @@ Hestia is a 'Cellular Life Engine': in a world, [creature](./src/Creature.py) ca
 Each creature have brains ([Neural Network](./src/Brain.py)) for their possible actions (Moving, Reproduce, Grow...) according to the information that they have (Itself, close environment, eyes..).
 
 The creature is composed of a base BODY which is its main organ. From it, ARM can be generated as children of the BODY. And each ARM can have children like ARM, SPIKE (To attack / defend themself), REPRODUCTOR or even EYE.
-Each cell which is part of a creature have a father-cell and children-cells making an octopus-like creature in it's structure.
+Each cell which is part of a creature have a father-cell and children-cells making an blob-like creature in it's structure.
 
 Each cell can eat [Food](./src/Environement.py) by moving on it, which gave them life points. But if a creature develop some "SPIKE" organ, they can eat other creatures and steal their life points.
 If a cell of the creature have more than 100 life points, the extra is given to its father and it go on up to the main BODY.
